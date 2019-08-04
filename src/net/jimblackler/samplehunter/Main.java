@@ -1,5 +1,7 @@
 package net.jimblackler.samplehunter;
 
+import com.google.common.base.Strings;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -19,22 +21,26 @@ public class Main {
     Random random = new Random(1);
     Map<String, Map<Integer, Set<String>>> filesByMimeType = new HashMap<>();
 
-    Files.walkFileTree(Paths.get("/Library"), new SimpleFileVisitor<>() {
+    Files.walkFileTree(Paths.get("/"), new SimpleFileVisitor<>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        String mimeType = Files.probeContentType(file);
+        String typeGroup = Files.probeContentType(file);
 
-        if (mimeType == null) {
+        if (Strings.isNullOrEmpty(typeGroup)) {
+          typeGroup = com.google.common.io.Files.getFileExtension(file.toString());
+        }
+
+        if (Strings.isNullOrEmpty(typeGroup)) {
           return FileVisitResult.CONTINUE;
         }
 
-        if (!filesByMimeType.containsKey(mimeType)) {
-          filesByMimeType.put(mimeType, new HashMap<>());
+        if (!filesByMimeType.containsKey(typeGroup)) {
+          filesByMimeType.put(typeGroup, new HashMap<>());
         }
-        Map<Integer, Set<String>> files = filesByMimeType.get(mimeType);
+        Map<Integer, Set<String>> files = filesByMimeType.get(typeGroup);
 
-        int sizeGroup = (int) (Math.log(file.toFile().length()) / Math.log(15));
-        if (sizeGroup >= 7) {
+        int sizeGroup = (int) (Math.log(file.toFile().length()) / Math.log(40));
+        if (sizeGroup >= 3) {
           return FileVisitResult.CONTINUE;
         }
 

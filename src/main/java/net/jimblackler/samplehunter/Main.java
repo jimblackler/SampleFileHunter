@@ -25,7 +25,7 @@ public class Main {
     Random random = new Random(9);
     Map<String, Map<Integer, Set<String>>> filesByType = new HashMap<>();
 
-    Files.walkFileTree(Paths.get("/"), new SimpleFileVisitor<>() {
+    Files.walkFileTree(Paths.get("/usr/local/google/home"), new SimpleFileVisitor<>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
         String typeGroup = Files.probeContentType(file);
@@ -75,8 +75,8 @@ public class Main {
           if (idx == item) {
             try {
               Path source = Paths.get(str);
-              Files.copy(source, Paths.get("/Users/jimblackler/Downloads/samples/" + new File(str).getName()),
-                  StandardCopyOption.REPLACE_EXISTING);
+              Files.copy(source, Paths.get("/usr/local/google/home/jimblackler/Downloads/samples",
+                  new File(str).getName()), StandardCopyOption.REPLACE_EXISTING);
               System.out.println(str);
             } catch (NoSuchFileException | AccessDeniedException e) {
               e.printStackTrace();

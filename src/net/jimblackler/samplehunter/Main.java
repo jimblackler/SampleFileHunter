@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -21,7 +22,7 @@ import java.util.Set;
 public class Main {
 
   public static void main(String[] args) throws IOException {
-    Random random = new Random(1);
+    Random random = new Random(9);
     Map<String, Map<Integer, Set<String>>> filesByType = new HashMap<>();
 
     Files.walkFileTree(Paths.get("/"), new SimpleFileVisitor<>() {
@@ -46,7 +47,7 @@ public class Main {
           return FileVisitResult.CONTINUE;
         }
         int sizeGroup = (int) (Math.log(length) / Math.log(40));
-        if (sizeGroup == 0 || sizeGroup >= 4) {
+        if (sizeGroup == 0 || sizeGroup >= 5) {
           return FileVisitResult.CONTINUE;
         }
 
@@ -77,7 +78,7 @@ public class Main {
               Files.copy(source, Paths.get("/Users/jimblackler/Downloads/samples/" + new File(str).getName()),
                   StandardCopyOption.REPLACE_EXISTING);
               System.out.println(str);
-            } catch (AccessDeniedException e) {
+            } catch (NoSuchFileException | AccessDeniedException e) {
               e.printStackTrace();
             }
           }

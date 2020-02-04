@@ -1,8 +1,10 @@
 package net.jimblackler.samplehunter;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileVisitResult;
@@ -13,50 +15,33 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 public class Main {
 
   public static void main(String[] args) throws IOException {
-    Random random = new Random(9);
-    Map<String, Map<Integer, Set<String>>> filesByType = new HashMap<>();
+    Random random = new Random(10);
+    Multimap<String, Path> filesByType = HashMultimap.create();
 
-    Files.walkFileTree(Paths.get("/usr/local/google/home"), new SimpleFileVisitor<>() {
+    Files.walkFileTree(Paths.get("/"), new SimpleFileVisitor<>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
         String typeGroup = Files.probeContentType(file);
 
         if (Strings.isNullOrEmpty(typeGroup)) {
           typeGroup = com.google.common.io.Files.getFileExtension(file.toString());
-          if (typeGroup.length() > 4 || Strings.isNullOrEmpty(typeGroup)) {
-            return FileVisitResult.CONTINUE;
+          if (typeGroup.toLowerCase().equals(typeGroup.toUpperCase()) || typeGroup.length() > 10) {
+            typeGroup = "unknown";
           }
         }
-
-        if (!filesByType.containsKey(typeGroup)) {
-          filesByType.put(typeGroup, new HashMap<>());
+        filesByType.put(typeGroup, file);
+        Collection<Path> paths = filesByType.get(typeGroup);
+        if (paths.size() > 5) {
+          paths.remove(Iterables.get(paths, random.nextInt(paths.size())));
         }
-        Map<Integer, Set<String>> files = filesByType.get(typeGroup);
-
-        long length = file.toFile().length();
-        if (length == 0) {
-          return FileVisitResult.CONTINUE;
-        }
-        int sizeGroup = (int) (Math.log(length) / Math.log(40));
-        if (sizeGroup == 0 || sizeGroup >= 5) {
-          return FileVisitResult.CONTINUE;
-        }
-
-        if (!files.containsKey(sizeGroup)) {
-          files.put(sizeGroup, new HashSet<>());
-        }
-        Set<String> f2 = files.get(sizeGroup);
-        f2.add(file.toString());
-
         return FileVisitResult.CONTINUE;
       }
 
@@ -67,23 +52,32 @@ public class Main {
       }
     });
 
-    for (Map<Integer, Set<String>> files : filesByType.values()) {
-      for (Set<String> f2 : files.values()) {
-        int item = random.nextInt(f2.size());
-        int idx = 0;
-        for (String str : f2) {
-          if (idx == item) {
-            try {
-              Path source = Paths.get(str);
-              Files.copy(source, Paths.get("/usr/local/google/home/jimblackler/Downloads/samples",
-                  new File(str).getName()), StandardCopyOption.REPLACE_EXISTING);
-              System.out.println(str);
-            } catch (NoSuchFileException | AccessDeniedException e) {
-              e.printStackTrace();
-            }
-          }
-          idx++;
+
+    long lastSize = 0;
+
+    Map<Path, Long> sizes = new HashMap<>();
+
+    for (Path file : filesByType.values()) {
+      long length = file.toFile().length();
+      if (length == 0) {
+        continue;
+      }
+      sizes.put(file, length);
+    }
+
+    Map<Path, Long> pathLongMap = MapUtil.sortByValue(sizes);
+    for (Map.Entry<Path, Long> entry : pathLongMap.entrySet()) {
+      Path file = entry.getKey();
+      long thisSize = entry.getValue();
+      if (lastSize * 1.05f + 10 <= thisSize) {
+        try {
+          Files.copy(file, Paths.get("/Users/jimblackler/Downloads/samples",
+              file.getFileName().toString()), StandardCopyOption.REPLACE_EXISTING);
+          System.out.println(file);
+        } catch (NoSuchFileException | AccessDeniedException e) {
+          e.printStackTrace();
         }
+        lastSize = thisSize;
       }
     }
   }
